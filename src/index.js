@@ -11,6 +11,9 @@ import store from './redux/store';
 const globalStyles = css`
     @import url('https://fonts.googleapis.com/css?family=Emilys+Candy&display=swap');
     
+    ::-webkit-scrollbar { 
+        width: 0 !important; 
+    }
 
     body {
         margin: 0;
@@ -18,25 +21,12 @@ const globalStyles = css`
         overflow: hidden;
         --color-blue : #7289da;
         --color-white : #ffffff;
-        --color-light-gray : #99aab5;
+        --color-light-gray : #43474c;
         --color-gray : #2c2f33;
         --color-dark-gray : #23272a;
-    }
-    button{
-        margin: 3px;
-        padding: .3rem .5rem;
-        background-color: #FEA0B0;
-        border: none;
-        border-radius: 3px;
-        &:hover{
-            background-color: #E6B3D9;
-            &:disabled{
-                background-color: gray;
-            }
-        } 
-        &:disabled{
-            background-color: gray;
-        }
+        --color-text : #dadbdc;
+
+        color: var(--color-text);
     }
 `;
 

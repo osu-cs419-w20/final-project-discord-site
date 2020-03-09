@@ -1,9 +1,6 @@
-export function getServers(state) {
-    return state.serveres;
+export function getAuthDiscord(state) {
+    return state.authDiscord;
 }
-export function getChannels(state) {
-    return state.chanels;
-}
-export function getDirectMessages(state) {
-    return state.directMessages;
+export function getAuthSpotifyUser(state) {
+    return state.authSpotifyUser;
 }

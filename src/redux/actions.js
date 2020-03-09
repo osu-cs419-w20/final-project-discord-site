@@ -1,40 +1,29 @@
 
-
-export const ServersActions = {
-    INIT_SERVERS: 'INIT_SERVERS'
+export const authSpotifyUserActions = {
+    INIT_USER: 'INIT_USER'
 };
 
-export function initServers( servers ) {
-    return { type: ServersActions.INIT_SERVERS, servers};
+export function initUser(user) {
+    return { type: authSpotifyUserActions.INIT_USER, user };
 }
 
 
-export const ChannelsActions = {
-    INIT_CHANNELS: 'INIT_CHANNELS',
-    ADD_MESSAGE: 'ADD_MESSAGE',
-    SEND_MESSAGE: 'SEND_MESSAGE' //might not need
-
+export const authDiscordActions = {
+    INIT_DM: 'INIT_DM',
+    INIT_USER: 'INIT_USER',
+    INIT_CHANNEL: 'INIT_CHANNEL',
+    LOGOUT: 'LOGOUT'
 };
 
-export function initChannels(serverID) {
-    return { type: ChannelsActions.INIT_CHANNELS, serverID };
+export function logoutUser() {
+    return { type: authDiscordActions.LOGOUT };
 }
-export function addChannelMessage(channelID, message) {
-    return { type: ChannelsActions.ADD_MESSAGE, channelID, message };
+export function addDirectMessage(userID, channel) {
+    return { type: authDiscordActions.INIT_DM, userID, channel };
 }
-export function sendChannelMessage(channelID, message) {
-    return { type: ChannelsActions.SEND_MESSAGE, channelID, message };
+export function addDirectMessageuserID(userID) {
+    return { type: authDiscordActions.INIT_USER, userID };
 }
-
-
-export const DirectMessagesActions = {
-    ADD_MESSAGE: 'ADD_MESSAGE',
-    SEND_MESSAGE: 'SEND_MESSAGE' //might not need
-};
-
-export function addDirectMessage(message) {
-    return { type: DirectMessagesActions.ADD_MESSAGE, message };
-}
-export function sendDirectMessage(channelID, message) {
-    return { type: DirectMessagesActions.ADD_MESSAGE,channelID, message };
+export function addDirectMessageChannel(channel) {
+    return { type: authDiscordActions.INIT_CHANNEL, channel };
 }

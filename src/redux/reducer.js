@@ -1,39 +1,32 @@
 import { combineReducers } from 'redux';
 
 import {
-    ServersActions,
-    ChannelsActions,
-    DirectMessagesActions
+    authSpotifyUserActions,
+    authDiscordActions
 } from './actions';
 
-function serversReducer ( state = [], action){
+
+function authDiscordReducer ( state = {}, action){
     switch(action.type){
-        case ServersActions.INIT_SERVERS:
+        case authDiscordActions.INIT_DM:
+            return {
+                channel: action.channel,
+                userID: action.userID
+            };
+        case authDiscordActions.INIT_USER:
             return state;
+        case authDiscordActions.INIT_CHANNEL:
+            return state;
+        case authDiscordActions.LOGOUT:
+            return {};
         default: 
             return state;
     }
 
 }
-
-function channelsReducer ( state = [], action){
+function authSpotifyUserReducer ( state = {}, action){
     switch(action.type){
-        case ChannelsActions.INIT_CHANNELS:
-            return state;
-        case ChannelsActions.ADD_MESSAGE:
-            return state;
-        case ChannelsActions.SEND_MESSAGE:
-            return state;
-        default: 
-            return state;
-    }
-
-}
-function directMessagesReducer ( state = [], action){
-    switch(action.type){
-        case DirectMessagesActions.ADD_MESSAGE:
-            return state;
-        case DirectMessagesActions.SEND_MESSAGE:
+        case authSpotifyUserActions.INIT_USER:
             return state;
         default: 
             return state;
@@ -42,8 +35,7 @@ function directMessagesReducer ( state = [], action){
 }
 
 const rootReducer = combineReducers({
-  servers: serversReducer,
-  channels: channelsReducer,
-  directMessages: directMessagesReducer
+  authDiscord: authDiscordReducer,
+  authSpotifyUser: authSpotifyUserReducer
 });
 export default rootReducer;
