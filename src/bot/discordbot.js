@@ -235,13 +235,13 @@ app.get('/spotify/callback', function(req, res) {
 	gen_playlists(options);
 
         // we can also pass the token to the browser to make requests from there
-        res.redirect('/disc/#' +
+        res.redirect(config.appURL + '#' +
           querystring.stringify({
             access_token: access_token,
             refresh_token: refresh_token
           }));
       } else {
-        res.redirect('/disc/#' +
+        res.redirect(config.appURL + '#' +
           querystring.stringify({
             error: 'invalid_token'
           }));
@@ -288,7 +288,7 @@ client.on('message', msg => {
 	}
 	if (msg.content === `${config.prefix}slogin`) {
 		lastloginmsg = msg;
-		msg.channel.send('Please login at: http://73.11.61.12/disc/spotify/');
+		msg.channel.send('Please login at: http://73.11.61.12/disc/spotify/login');
 	}
 	if (msg.content === `${config.prefix}slogout`) {
 		msg.channel.send(current_login_name + " logged out");
@@ -316,4 +316,4 @@ client.on('message', msg => {
 
 client.login(config.token);
 // console.log('Listening on 8888');
-// app.listen(8888);
+app.listen(8888);
