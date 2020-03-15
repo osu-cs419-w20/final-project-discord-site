@@ -3,8 +3,8 @@ export const authSpotifyUserActions = {
     INIT_USER: 'INIT_USER'
 };
 
-export function initUser(user) {
-    return { type: authSpotifyUserActions.INIT_USER, user };
+export function initUser(access_token, refresh_token) {
+    return { type: authSpotifyUserActions.INIT_USER, access_token, refresh_token };
 }
 
 

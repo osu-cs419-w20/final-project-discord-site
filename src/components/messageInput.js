@@ -3,6 +3,8 @@ import styled from '@emotion/styled';
 import fetch from 'isomorphic-unfetch';
 import {baseUrl} from '../App.js';
 import config from '../config.js';
+import { FaPaperPlane } from 'react-icons/fa';
+
 
 const Form = styled.form`
     min-height: 3rem;
@@ -14,12 +16,15 @@ const Form = styled.form`
         background-color: var(--color-light-gray);
         border: 1px solid var(--color-dark-gray);
         border-radius: 2px;
+        font-size: 1.5rem;
+        color: var(--color-text);
     }
     button{
         border: 1px solid var(--color-dark-gray);
         background-color: var(--color-blue);
         border-radius: 2px;
         color: var(--color-text);
+        font-size: 1.5rem;
     }
 
 `;
@@ -68,7 +73,7 @@ function MessageInput(props) {
                 onChange={handleChange} 
                 disabled={props.disabled || null}
                 />
-            <button type="submit">Send</button>
+            <button type="submit"><FaPaperPlane/></button>
         </Form> 
     );
 }

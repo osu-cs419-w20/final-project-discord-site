@@ -11,18 +11,17 @@ import MessageInput from './messageInput.js';
 import MessageContainer from './messageContainer.js';
 import config from '../config.js';
 // import Discord from "discord.js/webpack";
-const Discord = require('../../node_modules/discord.js/webpack/discord.min.js');
+const Discord = require('discord.js/webpack/discord.min');
 // const Discord = require("discord.js");
 
-const ChatContainer = styled.div`
+const VoiceContainer = styled.div`
     display: grid;
-    grid-template-rows: max-content min-content 1fr max-content;
+    grid-template-rows: max-content min-content 1fr;
     grid-template-columns: 1fr;
     grid-template-areas:
     " title "
     "warnings"
-    "chat"
-    "input";
+    "Voice";
     overflow: hidden;
     h2{
         grid-area: title;
@@ -37,7 +36,7 @@ const ChatContainer = styled.div`
         grid-area: warnings;
     }
     .scrollContainer{
-        grid-area: chat;
+        grid-area: Voice;
         overflow: scroll;
         
     }
@@ -50,7 +49,7 @@ const ChatContainer = styled.div`
 
 
 
-function Chat(props) {
+function Voice(props) {
 
     const [ messages, setMessages ] = useState([]);
     const [ loading, setLoading ] = useState(false);
@@ -63,14 +62,14 @@ function Chat(props) {
     useEffect(() => {
         client.login(config.token);
         client.on('ready', () => {
-            console.log("Chat Client ready!");
+            console.log("Voice Client ready!");
             setReady(true);
         });
 
         return () => {
             client.destroy() ;
             setReady(false)
-            console.log("Chat Client destroyed");
+            console.log("Voice Client destroyed");
         };
     }, []);
 
@@ -87,7 +86,7 @@ function Chat(props) {
             setLoading(true);
             try {
                 const response = await fetch(
-                baseUrl + `channels/${props.channel.id}/messages?limit=30`,
+                baseUrl + `channels/${props.channel.id}`,
                 { 
                     signal: controller.signal,
                     headers: {
@@ -113,7 +112,8 @@ function Chat(props) {
             if (!ignore) {
                 setError(false);
                 setLoading(false);
-                if(Array.isArray(responseBody)) setMessages(responseBody.reverse());
+                console.log(responseBody);
+                //if(Array.isArray(responseBody)) setMessages(responseBody.reverse());
             } else {
                 //console.log("== ignoring results");
             }
@@ -145,7 +145,7 @@ function Chat(props) {
     }, [messages]);
 
     return (
-        <ChatContainer>
+        <VoiceContainer>
             <div className="warnings">
             {error && <ErrorContainer>Error</ErrorContainer>}
             {(!ready) && <WarningContainer>Bot loading</WarningContainer>}
@@ -153,15 +153,11 @@ function Chat(props) {
             <h2>{props.channel.name || "Channel"}</h2>
 
             {loading ? <Spinner/> :
-                <ScrollToBottom className="scrollContainer"> 
-                    <MessageContainer messages={messages} />
-                </ScrollToBottom>
+                <div>Voice</div>
             }
 
-            <MessageInput disabled={!messages.length || !ready} channel={props.channel}/>
-            
-        </ChatContainer>
+        </VoiceContainer>
     );
 }
 
-export default Chat;
+export default Voice;

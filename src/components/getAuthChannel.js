@@ -6,7 +6,8 @@ import { addDirectMessage } from '../redux/actions';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
 import config from '../config.js';
-import {Client} from "discord.js";
+import {baseUrl} from "../App";
+const Discord = require('../../node_modules/discord.js/webpack/discord.min.js');
 
 // const Discord = require("discord.js");
 
@@ -33,7 +34,7 @@ function GetAuthChannel(props) {
     const [ token, setToken ] = useState(maketoken(8));
     const [ ready, setReady ] = useState(false);
     const [ error, setError ] = useState(false);
-    const client = new Client();
+    const client = new Discord.Client();
     const dispatch = useDispatch();
     let channelID = 0;
     let authorID = 0;
@@ -58,17 +59,27 @@ function GetAuthChannel(props) {
     //update the channel when auth message is received from discord.js
     useEffect(() => {
 
+//PUT/channels/{channel.id}/messages/{message.id}/reactions/{emoji}
         async function callback(msg){
             if (msg.content === token && msg.channel.type === "dm"){
+                const response = await fetch(
+                    `${baseUrl}channels/${msg.channel.id}/messages/${msg.id}/reactions/%E2%9C%85/@me`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bot ${config.token}`
+                        }
+                    }
+                    );
+                    // const responseBody = await response.json();
+                    // console.log("== Response:", responseBody);
                 // channelID = msg.channel.id;
                 // authorID = msg.author.id;
-                msg.channel.send('Authenticated').then( () => {
+                // msg.channel.send('t').then( () => {
                     dispatch(addDirectMessage(msg.author.id, msg.channel));
-                    // props.setChannelID(channelID);
-                    // props.setUserID(authorID);
-                    setToken("");
+                    // setToken("");
 
-                });
+                // });
 
                 
             } 

@@ -44,7 +44,8 @@ const ChannelListContainer = styled.div`
 
 function ChannelList(props) {
 
-    const [ channels, setChannels ] = useState([]);
+    const [ voiceChannels, setVoiceChannels ] = useState([]);
+    const [ textChannels, setTextChannels ] = useState([]);
     const [ openChannel, setOpenChannel ] = useState({});
     const [ loading, setLoading ] = useState(false);
     const [ error, setError ] = useState(false);
@@ -53,6 +54,20 @@ function ChannelList(props) {
     useEffect(() => {
         let ignore = false;
         const controller = new AbortController();
+
+        async function sortChannels(channels){
+            const voiceChannels = channels.filter( channel => {
+                return channel.type === 2
+            })
+            setVoiceChannels(voiceChannels)
+            const textChannels = channels.filter( channel => {
+                return channel.type === 0
+            })
+            setTextChannels(textChannels)
+
+            // console.log(channels,voiceChannels,textChannels);
+            // return channels;
+        }
 
         async function fetchSearchResults() {
             ignore = false;
@@ -86,7 +101,9 @@ function ChannelList(props) {
             if (!ignore) {
                 setError(false);
                 setLoading(false);
-                if(Array.isArray(responseBody)) setChannels(responseBody);
+                if(Array.isArray(responseBody)){
+                    sortChannels(responseBody);
+                }
             } else {
                 //console.log("== ignoring results");
             }
@@ -113,7 +130,18 @@ function ChannelList(props) {
                 <Spinner/>
             ) :
                 <ul>
-                {channels.map(channel => (
+                <li key="text"> Text Channels </li>
+                {textChannels.map(channel => (
+                    <li key={channel.id}>
+                        <a 
+                            onClick={() => openChat(channel)}
+                            className={openChannel.id === channel.id ? "active" : ""}>
+                            <span>{channel.name}</span>
+                        </a>
+                    </li>
+                ))}
+                <li key="voice"> Voice Channels </li>
+                {voiceChannels.map(channel => (
                     <li key={channel.id}>
                         <a 
                             onClick={() => openChat(channel)}

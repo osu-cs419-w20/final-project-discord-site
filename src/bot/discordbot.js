@@ -21,7 +21,7 @@ const client = new Discord.Client();
 //spotify consts
 const client_id = config.client_id;
 const client_secret = config.client_secret;
-const redirect_uri = 'http://73.11.61.12/disc/spotify/callback'; // Your redirect uri
+const redirect_uri = 'http://localhost:3000/api/spotify/callback'; // Your redirect uri
 
 var g_auth_token;
 var g_refresh_token;
@@ -29,6 +29,9 @@ var lastloginmsg;
 var current_login_name;
 var current_user_id;
 var current_user_playlists;
+
+var authUser = false;
+const authUserIds = ['128250152837316609']
 
 function reset_state(){
 
@@ -38,6 +41,15 @@ function reset_state(){
 	current_login_name = null;
 	current_user_id = null;
 	current_user_playlists = null;
+}
+
+function login(msg){
+	if (authUserIds.includes(msg.author.id)){
+		authUser = true;
+		msg.react('✅');
+	} else {
+		msg.react('❌');
+	}
 }
 
 function convertUTCDateToLocalDate(date) {
@@ -105,16 +117,16 @@ function gen_playlists(options){
 
 	var playlists = {};
        	request.get(options, function(error, response, body) {
-       		console.log(body);
+       		// console.log(body);
 		for (var playlist in body['items']){
 			playlist_idx = parseInt(playlist) + parseInt(body['offset']);
-			console.log(playlist_idx);
+			// console.log(playlist_idx);
 			playlists[playlist_idx] = {
 				'id': body['items'][playlist]['id'],
 				'name': body['items'][playlist]['name']
 			}
 		}
-		console.log(playlists);
+		// console.log(playlists);
 		if (body['next'] != null) {
 			options.url = body['next'];
 			current_user_playlists = {...current_user_playlists,...playlists};
@@ -158,7 +170,19 @@ app.use(express.static(__dirname + '/public'))
    .use(cors())
    .use(cookieParser());
 
-app.get('/spotify/login', function(req, res) {
+app.get('/api/login', function(req, res) {
+
+	if(authUser){
+		authUser = false;
+		res.json({
+			token: config.token
+		});
+	} else {
+		res.status(401).end();
+	}
+});
+
+app.get('/api/spotify/login', function(req, res) {
 
   var state = generateRandomString(16);
   res.cookie(stateKey, state);
@@ -175,7 +199,7 @@ app.get('/spotify/login', function(req, res) {
     }));
 });
 
-app.get('/spotify/callback', function(req, res) {
+app.get('/api/spotify/callback', function(req, res) {
 
   // your application requests refresh and access tokens
   // after checking the state parameter
@@ -208,9 +232,9 @@ app.get('/spotify/callback', function(req, res) {
       if (!error && response.statusCode === 200) {
 
         var access_token = body.access_token,
-            refresh_token = body.refresh_token;
-	g_auth_token = access_token;
-	g_refresh_token = refresh_token;
+		refresh_token = body.refresh_token;
+		g_auth_token = access_token;
+		g_refresh_token = refresh_token;
 
         var options = {
           url: 'https://api.spotify.com/v1/me',
@@ -219,29 +243,33 @@ app.get('/spotify/callback', function(req, res) {
         };
 
         // use the access token to access the Spotify Web API
-        request.get(options, function(error, response, body) {
-          console.log(body);
-	  current_login_name = body['display_name']
-	  current_user_id = body['id']
-	  lastloginmsg.channel.send("logged in as user " + current_login_name);
-        });
-
+		request.get(options, function(error, response, body) {
+			console.log(body);
+			current_login_name = body['display_name']
+			current_user_id = body['id']
+			if(lastloginmsg){
+				lastloginmsg.channel.send("logged in as user " + current_login_name);
+			}
+		});
+		
         options = {
         	url: 'https://api.spotify.com/v1/me/playlists',
         	headers: { 'Authorization': 'Bearer ' + g_auth_token },
         	json: true
         };
-	current_user_playlists = {};
-	gen_playlists(options);
+		current_user_playlists = {};
+		gen_playlists(options);
+		const url = "http://" + config.appURL + '/spotify' + '#' +
+		querystring.stringify({
+		  access_token: access_token,
+		  refresh_token: refresh_token
+		})
+		// we can also pass the token to the browser to make requests from there
+		console.log(url);
 
-        // we can also pass the token to the browser to make requests from there
-        res.redirect(config.appURL + '#' +
-          querystring.stringify({
-            access_token: access_token,
-            refresh_token: refresh_token
-          }));
+        res.redirect(url);
       } else {
-        res.redirect(config.appURL + '#' +
+        res.redirect(config.appURL + '/spotify' + '#' +
           querystring.stringify({
             error: 'invalid_token'
           }));
@@ -250,7 +278,7 @@ app.get('/spotify/callback', function(req, res) {
   }
 });
 
-app.get('/spotify/refresh_token', function(req, res) {
+app.get('/api/spotify/refresh_token', function(req, res) {
 
   // requesting access token from refresh token
   var refresh_token = req.query.refresh_token;
@@ -286,9 +314,15 @@ client.on('message', msg => {
 	if (msg.content === `${config.prefix}cargo`) {
 		find_cargo_times(msg);
 	}
+	if (msg.content === `${config.prefix}login`) {
+		login(msg);
+	}
+	if (msg.content === `${config.prefix}logout`) {
+		logout(msg);
+	}
 	if (msg.content === `${config.prefix}slogin`) {
 		lastloginmsg = msg;
-		msg.channel.send('Please login at: http://73.11.61.12/disc/spotify/login');
+		msg.channel.send('Please login at: http://localhost:3000/api/spotify/login');
 	}
 	if (msg.content === `${config.prefix}slogout`) {
 		msg.channel.send(current_login_name + " logged out");

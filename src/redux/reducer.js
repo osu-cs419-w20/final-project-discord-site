@@ -14,9 +14,15 @@ function authDiscordReducer ( state = {}, action){
                 userID: action.userID
             };
         case authDiscordActions.INIT_USER:
-            return state;
+            return {
+                ...state,
+                userID: action.userID
+            };
         case authDiscordActions.INIT_CHANNEL:
-            return state;
+            return {
+                ...state,
+                channel: action.channel
+            };
         case authDiscordActions.LOGOUT:
             return {};
         default: 
@@ -27,7 +33,10 @@ function authDiscordReducer ( state = {}, action){
 function authSpotifyUserReducer ( state = {}, action){
     switch(action.type){
         case authSpotifyUserActions.INIT_USER:
-            return state;
+            return {
+                access_token: action.access_token,
+                refresh_token: action.refresh_token
+            };
         default: 
             return state;
     }

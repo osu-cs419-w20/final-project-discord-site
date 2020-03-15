@@ -7,6 +7,7 @@ const List = styled.ul`
     list-style: none;
     .message{
       margin: .5rem;
+      word-wrap: break-word;
     }
 `;
 
