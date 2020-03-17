@@ -10,6 +10,9 @@ import WarningContainer from './warningContainer.js';
 import MessageInput from './messageInput.js';
 import MessageContainer from './messageContainer.js';
 import config from '../config.js';
+import { getToken } from '../redux/selectors';
+import { useSelector } from 'react-redux';
+
 // import Discord from "discord.js/webpack";
 const Discord = require('discord.js/webpack/discord.min');
 // const Discord = require("discord.js");
@@ -50,6 +53,7 @@ const VoiceContainer = styled.div`
 
 
 function Voice(props) {
+    const token = useSelector(getToken);
 
     const [ messages, setMessages ] = useState([]);
     const [ loading, setLoading ] = useState(false);
@@ -60,7 +64,7 @@ function Voice(props) {
 
     //login bot on load
     useEffect(() => {
-        client.login(config.token);
+        client.login(token);
         client.on('ready', () => {
             console.log("Voice Client ready!");
             setReady(true);
@@ -90,7 +94,7 @@ function Voice(props) {
                 { 
                     signal: controller.signal,
                     headers: {
-                        'Authorization': `Bot ${config.token}`
+                        'Authorization': `Bot ${token}`
                     }
                 }
                 );

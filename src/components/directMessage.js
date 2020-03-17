@@ -5,7 +5,7 @@ import Chat from './chat';
 import GetAuthChannel from './getAuthChannel';
 import {baseUrl} from '../App.js';
 import config from '../config.js';
-import {getAuthDiscord} from '../redux/selectors';
+import {getAuthDiscord, getToken} from '../redux/selectors';
 
 
 const DirectMessageMainContainer = styled.main`
@@ -28,6 +28,7 @@ const DirectMessageMainContainer = styled.main`
 
 function DirectMessage() {
     const authDiscord = useSelector(getAuthDiscord);
+    const token = useSelector(getToken);
 
     
     useEffect(() => {
@@ -43,7 +44,7 @@ function DirectMessage() {
                 { 
                     signal: controller.signal,
                     headers: {
-                        'Authorization': `Bot ${config.token}`
+                        'Authorization': `Bot ${token}`
                     }
                 }
                 );

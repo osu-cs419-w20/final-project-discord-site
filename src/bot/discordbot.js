@@ -31,7 +31,7 @@ var current_user_id;
 var current_user_playlists;
 
 var authUser = false;
-const authUserIds = ['128250152837316609']
+const authUserIds = config.userIDs;
 
 function reset_state(){
 

@@ -1,6 +1,7 @@
 {
 	"prefix": "`",
     "token": "discord_api_token",
+    "userIDs": ["user_IDs_able_to_login"],
     "client_secret": "spotify_client_secret",
     "client_id": "spotify_client_id",
     "appURL": "localhost:3000"

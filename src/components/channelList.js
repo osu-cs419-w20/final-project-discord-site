@@ -6,6 +6,9 @@ import {baseUrl} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
 import config from '../config.js';
+import { getToken } from '../redux/selectors';
+import { useSelector } from 'react-redux';
+
 
 const ChannelListContainer = styled.div`
     > div{
@@ -44,6 +47,8 @@ const ChannelListContainer = styled.div`
 
 function ChannelList(props) {
 
+    const token = useSelector(getToken);
+
     const [ voiceChannels, setVoiceChannels ] = useState([]);
     const [ textChannels, setTextChannels ] = useState([]);
     const [ openChannel, setOpenChannel ] = useState({});
@@ -79,7 +84,7 @@ function ChannelList(props) {
                 { 
                     signal: controller.signal,
                     headers: {
-                        'Authorization': `Bot ${config.token}`
+                        'Authorization': `Bot ${token}`
                     }
                 }
                 );

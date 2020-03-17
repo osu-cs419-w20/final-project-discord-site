@@ -6,6 +6,9 @@ import {baseUrl} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
 import config from '../config.js';
+import { getToken } from '../redux/selectors';
+import { useSelector } from 'react-redux';
+
 
 const ServerListContainer = styled.div`
     > div{
@@ -58,6 +61,7 @@ const ServerListContainer = styled.div`
 `;
 
 function ServerList(props) {
+    const token = useSelector(getToken);
 
     const [ servers, setServers ] = useState([]);
     const [ loading, setLoading ] = useState(false);
@@ -79,7 +83,7 @@ function ServerList(props) {
                 { 
                     signal: controller.signal,
                     headers: {
-                        'Authorization': `Bot ${config.token}`
+                        'Authorization': `Bot ${token}`
                     }
                 }
                 );

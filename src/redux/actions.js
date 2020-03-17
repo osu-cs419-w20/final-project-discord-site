@@ -9,6 +9,7 @@ export function initUser(access_token, refresh_token) {
 
 
 export const authDiscordActions = {
+    INIT_TOKEN: 'INIT_TOKEN',
     INIT_DM: 'INIT_DM',
     INIT_USER: 'INIT_USER',
     INIT_CHANNEL: 'INIT_CHANNEL',
@@ -23,6 +24,9 @@ export function addDirectMessage(userID, channel) {
 }
 export function addDirectMessageuserID(userID) {
     return { type: authDiscordActions.INIT_USER, userID };
+}
+export function addToken(token) {
+    return { type: authDiscordActions.INIT_TOKEN, token };
 }
 export function addDirectMessageChannel(channel) {
     return { type: authDiscordActions.INIT_CHANNEL, channel };

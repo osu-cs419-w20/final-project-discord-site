@@ -8,8 +8,14 @@ import {
 
 function authDiscordReducer ( state = {}, action){
     switch(action.type){
+        case authDiscordActions.INIT_TOKEN:
+            return {
+                ...state,
+                token: action.token
+            };
         case authDiscordActions.INIT_DM:
             return {
+                ...state,
                 channel: action.channel,
                 userID: action.userID
             };
@@ -44,7 +50,7 @@ function authSpotifyUserReducer ( state = {}, action){
 }
 
 const rootReducer = combineReducers({
-  authDiscord: authDiscordReducer,
-  authSpotifyUser: authSpotifyUserReducer
+    authDiscord: authDiscordReducer,
+    authSpotifyUser: authSpotifyUserReducer
 });
 export default rootReducer;

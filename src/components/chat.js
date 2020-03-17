@@ -3,6 +3,9 @@ import styled from '@emotion/styled';
 import fetch from 'isomorphic-unfetch';
 import ScrollToBottom /*, {useSticky}*/ from 'react-scroll-to-bottom';
 
+import { getToken } from '../redux/selectors';
+import { useSelector } from 'react-redux';
+
 import {baseUrl} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
@@ -52,6 +55,7 @@ const ChatContainer = styled.div`
 
 function Chat(props) {
 
+    const token = useSelector(getToken);
     const [ messages, setMessages ] = useState([]);
     const [ loading, setLoading ] = useState(false);
     const [ ready, setReady ] = useState(false);
@@ -61,7 +65,7 @@ function Chat(props) {
 
     //login bot on load
     useEffect(() => {
-        client.login(config.token);
+        client.login(token);
         client.on('ready', () => {
             console.log("Chat Client ready!");
             setReady(true);
@@ -72,7 +76,7 @@ function Chat(props) {
             setReady(false)
             console.log("Chat Client destroyed");
         };
-    }, []);
+    }, [token]);
 
     //fetch starting channel messages using discord API
     useEffect(() => {
@@ -91,7 +95,7 @@ function Chat(props) {
                 { 
                     signal: controller.signal,
                     headers: {
-                        'Authorization': `Bot ${config.token}`
+                        'Authorization': `Bot ${token}`
                     }
                 }
                 );

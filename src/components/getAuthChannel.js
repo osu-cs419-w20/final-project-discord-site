@@ -7,6 +7,9 @@ import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
 import config from '../config.js';
 import {baseUrl} from "../App";
+import { getToken } from '../redux/selectors';
+import { useSelector } from 'react-redux';
+
 const Discord = require('../../node_modules/discord.js/webpack/discord.min.js');
 
 // const Discord = require("discord.js");
@@ -30,8 +33,9 @@ function maketoken(length) {
 
 
 function GetAuthChannel(props) {
-
-    const [ token, setToken ] = useState(maketoken(8));
+    const token = useSelector(getToken);
+    
+    const [ DMToken, setDMToken ] = useState(maketoken(8));
     const [ ready, setReady ] = useState(false);
     const [ error, setError ] = useState(false);
     const client = new Discord.Client();
@@ -43,7 +47,7 @@ function GetAuthChannel(props) {
 
     //login bot on load
     useEffect(() => {
-        client.login(config.token);
+        client.login(token);
         client.on('ready', () => {
             console.log("Auth Client ready!");
             setReady(true);
@@ -54,20 +58,20 @@ function GetAuthChannel(props) {
             setReady(false)
             console.log("Auth Client destroyed");
         };
-    }, []);
+    }, [token]);
 
     //update the channel when auth message is received from discord.js
     useEffect(() => {
 
 //PUT/channels/{channel.id}/messages/{message.id}/reactions/{emoji}
         async function callback(msg){
-            if (msg.content === token && msg.channel.type === "dm"){
+            if (msg.content === DMToken && msg.channel.type === "dm"){
                 const response = await fetch(
                     `${baseUrl}channels/${msg.channel.id}/messages/${msg.id}/reactions/%E2%9C%85/@me`,
                     {
                         method: 'PUT',
                         headers: {
-                            'Authorization': `Bot ${config.token}`
+                            'Authorization': `Bot ${token}`
                         }
                     }
                     );
@@ -101,7 +105,7 @@ function GetAuthChannel(props) {
             {!ready ? ( <Spinner/> ) :
                 <div className="instructions">
                     <span>Direct Message</span>
-                    <h1>{token}</h1> 
+                    <h1>{DMToken}</h1> 
                     <span>to authenticate.</span> 
                 </div>
             }
