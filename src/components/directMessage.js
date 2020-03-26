@@ -13,16 +13,29 @@ const DirectMessageMainContainer = styled.main`
     grid-template-columns: 1fr 2fr max-content 2fr 1fr;
     grid-template-rows: max-content 80vh 1fr;
     grid-template-areas:
-    " . . title . ."
+    " . title title title ."
     " . chat chat chat ."
     ". . . . .";
     > h1{
         grid-area: title;
+        margin-left: auto;
+        margin-right: auto;
     }
     > div{
         grid-area: chat;
         border-radius: 2px;
         background-color: var(--color-dark-gray);
+    }
+    @media screen and (max-width: 768px){
+        grid-template-columns: 1fr max-content 1fr;
+        grid-template-rows: 8vh 87vh 5vh;
+
+        margin: 0 .5rem;
+        gap: .2rem;
+        grid-template-areas:
+        ". title . "
+        "chat chat chat "
+        ". . . ";
     }
 `;
 

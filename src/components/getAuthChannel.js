@@ -65,7 +65,7 @@ function GetAuthChannel(props) {
 
 //PUT/channels/{channel.id}/messages/{message.id}/reactions/{emoji}
         async function callback(msg){
-            if (msg.content === DMToken && msg.channel.type === "dm"){
+            if (msg.content === DMToken){
                 const response = await fetch(
                     `${baseUrl}channels/${msg.channel.id}/messages/${msg.id}/reactions/%E2%9C%85/@me`,
                     {

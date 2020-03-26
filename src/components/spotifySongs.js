@@ -1,13 +1,11 @@
 import React, {useState} from 'react';
 import styled from '@emotion/styled';
-import ServerList from './serverList'
-import ChannelList from './channelList'
-import Chat from './chat'
-import Voice from './voice'
+import SongList from './songList';
+import PlaylistList from './playlistList';
 
-import { FaComment, FaArrowLeft } from 'react-icons/fa';
+import { FaPlay, FaArrowLeft } from 'react-icons/fa';
 
-const ServerChannelsMainContainer = styled.main`
+const SpotifySongsMainContainer = styled.main`
     display: grid;
     grid-template-columns: .5fr minmax(10rem,max-content) minmax(10rem,max-content) 3fr .5fr;
     grid-template-rows: 2rem 80vh 2rem;
@@ -29,12 +27,7 @@ const ServerChannelsMainContainer = styled.main`
         grid-area: channelList;
         border-radius: 2px;
         background-color: var(--color-dark-gray);
-        overflow: scroll;
-    }
-    > div:nth-of-type(3){
-        grid-area: channelChat;
-        border-radius: 2px;
-        background-color: var(--color-dark-gray);
+        overflow: hidden;
     }
     > p{
         grid-area: instructions;
@@ -70,65 +63,49 @@ const ServerChannelsMainContainer = styled.main`
         }
 
         > div:nth-of-type(1){
-            grid-area: left;
+            grid-area: ${props => props.open ? 'left' : '2 / 1 / 3 / 5'};
             border-radius: 2px;
             background-color: var(--color-dark-gray);
             overflow: scroll;
             display: ${props => props.open ? 'none' : 'block'};
         }
         > div:nth-of-type(2){
-            grid-area: right;
+            grid-area: ${props => props.open ? '2 / 1 / 3 / 5' : 'right'};
             border-radius: 2px;
             background-color: var(--color-dark-gray);
-            overflow: scroll;
-            display: ${props => props.open ? 'none' : 'block'};
-
-        }
-        > div:nth-of-type(3){
-            grid-area: 2 / 1 / 3 / 5;
-            /* grid-column: 2/5;
-            grid-row: 2/3; */
-            border-radius: 2px;
-            background-color: var(--color-dark-gray);
+            overflow: hidden;
             display: ${props => props.open ? 'grid' : 'none'};
-            ul{
-                padding: 0;
-            }
 
         }
     }
 `;
 
-function ServerChannels() {
+function SpotifySongs() {
     const [ refresh, setRefresh ] = useState(0);
     const [ channel, setChannel ] = useState({});
-    const [ chatOpen, setChatOpen ] = useState(false);
+    const [ songOpen, setSongOpen ] = useState(true);
 
     function incRefresh(){
         setRefresh(refresh + 1);
+        setSongOpen(true);
     }
     function updateChannel(ch){
         // console.log("serverchannels ", ch);
         setChannel(ch);
-        setChatOpen(true);
+        setSongOpen(true);
     }
-    function toggleChat(){
-        setChatOpen(!chatOpen);
+    function toggleSong(){
+        setSongOpen(!songOpen);
     }
 
     return (
-        <ServerChannelsMainContainer open={chatOpen}>
-            <button onClick={toggleChat}>{chatOpen ? <FaArrowLeft/> :<FaComment/>} </button>
-            <ServerList refresh={incRefresh} icon='false'/>
-            <ChannelList openChat={updateChannel} refresh={refresh}/>
-            {!channel.id ? <div>Enter a channel</div>: 
-                channel.type === 0 ?
-                    <Chat channel={channel}/>:
-                    <Voice channel={channel}/>
-            }
+        <SpotifySongsMainContainer open={songOpen}>
+            <button onClick={toggleSong}>{songOpen ? <FaArrowLeft/> :<FaPlay/>} </button>
+            <PlaylistList refresh={incRefresh}/>
+            <SongList/>
             
-        </ServerChannelsMainContainer>
+        </SpotifySongsMainContainer>
     );
 }
 
-export default ServerChannels;
+export default SpotifySongs;

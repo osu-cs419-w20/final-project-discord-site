@@ -43,9 +43,10 @@ function Auth() {
     
 
 
-    async function getToken(){
+    async function getToken(auto){
         let ignore = false;
         const controller = new AbortController();
+        console.log(auto);
 
         async function fetchSearchResults() {
             ignore = false;
@@ -58,7 +59,7 @@ function Auth() {
                     signal: controller.signal,
                 }
                 );
-                if (response.status === 401){
+                if (auto!==true && response.status === 401){
                     ignore = true;
                     setError(true);
                 } else {
@@ -86,6 +87,10 @@ function Auth() {
             ignore = true;
         };
     }
+
+    useEffect(() => {
+        getToken(true);
+    }, []);
 
     return (
         <AuthContainer>

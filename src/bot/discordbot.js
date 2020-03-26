@@ -15,6 +15,8 @@ const request = require('request'); // "Request" library
 const cors = require('cors');
 const querystring = require('querystring');
 const cookieParser = require('cookie-parser');
+const fetch = require('isomorphic-unfetch');
+const ytdl = require('ytdl-core');
 
 const client = new Discord.Client();
 
@@ -23,6 +25,7 @@ const client_id = config.client_id;
 const client_secret = config.client_secret;
 const redirect_uri = 'http://localhost:3000/api/spotify/callback'; // Your redirect uri
 
+//spotify vars
 var g_auth_token;
 var g_refresh_token;
 var lastloginmsg;
@@ -30,9 +33,30 @@ var current_login_name;
 var current_user_id;
 var current_user_playlists;
 
+//google/youtube vars
+const youtubeAPI = "https://www.googleapis.com/youtube/v3";
+
+//login vars
 var authUser = false;
+var authUserId = null;
 const authUserIds = config.userIDs;
 
+//music queue vars
+function Song(url, name, addedBy) {
+	this.url = url;
+	this.name = name;
+	this.addedBy = addedBy;
+	this.next = null;
+	this.prev = null;
+}
+let current_song = null;
+let song_playing = false;
+
+// 
+// 
+//  Functions 
+// 
+//
 function reset_state(){
 
 	g_auth_token = null;
@@ -41,10 +65,180 @@ function reset_state(){
 	current_login_name = null;
 	current_user_id = null;
 	current_user_playlists = null;
+	authUser = false;
+	authUserId = null;
+	current_song = null;
+}
+//music queue functions
+async function stream_song(connection, channel){
+	const streamOptions = { seek: 0, volume: 1 };//{ type: 'opus' };
+
+	// console.log("joined channel");
+	console.log("playing: ", current_song.name);
+	console.log(current_song.url);
+	const stream = ytdl(current_song.url, {
+					filter: 'audioonly',
+					highWaterMark: 1<<25
+				});
+	const dispatcher = connection.play(stream, streamOptions);
+	song_playing = true;
+	// stream.on('end', ()=> {
+	// 	console.log("stream end");
+	// })
+	stream.on("end", end => {
+		console.log("stream end");
+		if(current_song.next){
+			console.log("playing next");
+			const next = current_song.next;
+			remove_from_queue(current_song);
+			current_song = next;
+			stream_song(connection, channel)
+		} else {
+			song_playing = false;
+			current_song = null;
+			console.log("left channel");
+			channel.leave();
+		}
+		
+	});
+}
+
+async function play(channel){
+	if (channel){
+		channel.join().then(async connection => {
+			stream_song(connection, channel)
+		}).catch(err => console.log(err));
+		
+	}
+}
+
+async function start_playing(msg = null){
+	var voiceChannel = msg ? msg.member.voice.channel: null /*find_channel(authUserId)*/;
+	// console.log(voiceChannel);
+	play(voiceChannel);
+	
+
+}
+
+async function get_song(query, user, msg = null){
+
+
+	const response = await fetch(
+		`${youtubeAPI}/search?type=video&part=snippet&maxResults=25&q=${query}&key=${config.youtube_key}`,
+		{ 
+			headers: {
+				Accept: "application/json"
+			}
+		}
+	);
+	responseBody = await response.json();
+	if (msg){
+		msg.channel.send(`Adding ${responseBody.items[0].snippet.title}`);
+	}
+	return new Song(`http://www.youtube.com/watch?v=${responseBody.items[0].id.videoId}`,
+					 responseBody.items[0].snippet.title,
+					 user)
+}
+
+function add_after(loc,toadd){
+	if(loc && toadd){
+		let temp = loc.next;
+		loc.next = toadd;
+		toadd.prev = loc;
+		toadd.next = temp;
+		if(toadd.next){
+			toadd.next.prev = toadd;
+		}
+	}
+}
+
+async function add_to_queue_at(query, user, idx, msg){
+	if(current_song){
+		let temp = current_song;
+		for (let i = 0; i < idx; i++) {
+			if(temp && temp.next){
+				temp = temp.next;
+			}
+		}
+		add_after(temp, await get_song(query, user, msg));
+	} else {
+		current_song = await get_song(query, user, msg);
+		start_playing(msg);
+	}
+}
+
+async function add_to_queue(query, user, msg){
+	if(current_song){
+		let temp = current_song;
+		while(temp.next){
+			temp = temp.next;
+		}
+		add_after(temp, await get_song(query, user, msg));
+	} else {
+		current_song = await get_song(query, user, msg);
+		start_playing(msg);
+	}
+}
+async function queue_next(query, user, msg){
+	if(current_song){
+		add_after(current_song, await get_song(query, user, msg));
+	} else {
+		current_song = await get_song(query, user, msg);
+		start_playing(msg);
+	}
+}
+function clear_queue(){
+	clear_queue_from(current_song);
+	current_song = null;
+}
+function clear_queue_from(song){
+	if(song){
+		song.prev = null;
+		clear_queue_from(song.next);
+		song.next = null;
+	}
+}
+function remove_from_queue(idx){
+	let temp = current_song;
+	for (let i = 0; i < idx; i++) {
+		// console.log(temp);
+		if(temp){
+			temp = temp.next;
+		}
+	}
+	if(temp.prev){
+		temp.prev.next = temp.next;
+	}
+	if(temp.next){
+		temp.next.prev = temp.prev;
+	}
+	temp.next = null;
+	temp.prev = null;
+}
+function print_queue(msg){
+	let res = "";
+	let i = 1;
+	if(current_song){
+		let temp = current_song;
+		while(temp.next){
+			res += `${i++}: ${temp.name}, added by: ${temp.addedBy}\n`;
+			temp = temp.next;
+		}
+		res += `${i}: ${temp.name}, added by: ${temp.addedBy}`;
+	} else {
+		res = "Queue empty"
+	}
+	msg.channel.send(res);
+}
+function play_next_song(){
+	current_song = current_song.next;
+	current_song.prev.next = null;
+	current_song.prev = null;
 }
 
 function login(msg){
 	if (authUserIds.includes(msg.author.id)){
+		authUserId = msg.author.id;
 		authUser = true;
 		msg.react('✅');
 	} else {
@@ -172,6 +366,8 @@ app.use(express.static(__dirname + '/public'))
 
 app.get('/api/login', function(req, res) {
 
+	//TODO: make user enter a token (given when using login command)
+	//to validate as opposed to just trusting the first page load is the user
 	if(authUser){
 		authUser = false;
 		res.json({
@@ -182,6 +378,39 @@ app.get('/api/login', function(req, res) {
 	}
 });
 
+app.post('/api/song', function(req, res) {
+
+	let q = req.query.q;
+	let idx = parseInt(req.query.idx);
+	if(! typeof(idx)){
+		idx = -1;
+	}
+	console.log("adding at: ",idx)
+	if(idx === -1){
+		add_to_queue(q,"web", null);
+	} else {
+		add_to_queue_at(q,"web",idx, null)
+	}
+
+	res.status(200).end();
+});
+
+app.delete('/api/song', function(req, res) {
+
+	let idx = req.query.idx || -1;
+	if(idx >= 0){
+		remove_from_queue(idx)
+		res.status(200).end();
+	} else {
+		res.status(400).end();
+	}
+});
+
+//
+//
+//Spotify Auth
+//
+//
 app.get('/api/spotify/login', function(req, res) {
 
   var state = generateRandomString(16);
@@ -245,10 +474,13 @@ app.get('/api/spotify/callback', function(req, res) {
         // use the access token to access the Spotify Web API
 		request.get(options, function(error, response, body) {
 			console.log(body);
-			current_login_name = body['display_name']
-			current_user_id = body['id']
-			if(lastloginmsg){
-				lastloginmsg.channel.send("logged in as user " + current_login_name);
+			if(body && body.id && body.display_name){
+				current_login_name = body['display_name']
+				current_user_id = body['id']
+				
+				if(lastloginmsg){
+					lastloginmsg.channel.send("logged in as user " + current_login_name);
+				}
 			}
 		});
 		
@@ -314,6 +546,58 @@ client.on('message', msg => {
 	if (msg.content === `${config.prefix}cargo`) {
 		find_cargo_times(msg);
 	}
+	if (msg.content.startsWith(`${config.prefix}play `)) {
+		const splitmsg = msg.content.split(' ');
+		if (splitmsg.length >= 2){
+			var query = splitmsg.slice(1,splitmsg.length).join(' ');
+			add_to_queue(query,msg.author.username, msg)
+			msg.react('✅');
+		} else {
+			msg.channel.send(`Format: ${config.prefix}play URL`)
+		}
+	}
+	if (msg.content.startsWith(`${config.prefix}playat `)) {
+		const splitmsg = msg.content.split(' ');
+		if (splitmsg.length >= 3){
+			var idx = parseInt(msg.content.split(' ')[1]) - 1;
+			var query = splitmsg.slice(2,splitmsg.length).join(' ');
+			add_to_queue_at(query,msg.author.username,idx, msg)
+			msg.react('✅');
+		} else {
+			msg.channel.send(`Format: ${config.prefix}playat index URL`)
+		}
+	}
+	if (msg.content.startsWith(`${config.prefix}playnext `)) {
+		const splitmsg = msg.content.split(' ');
+		if (splitmsg.length >= 2){
+			var query = splitmsg.slice(1,splitmsg.length).join(' ');
+			queue_next(query,msg.author.username, msg)
+			msg.react('✅');
+		} else {
+			msg.channel.send(`Format: ${config.prefix}playnext URL`)
+		}
+
+	}
+	if (msg.content.startsWith(`${config.prefix}remove `)) {
+		const splitmsg = msg.content.split(' ');
+		if (splitmsg.length === 2){
+			var idx = parseInt(msg.content.split(' ')[1]) - 1;
+			remove_from_queue(idx)
+			msg.react('✅');
+		} else {
+			msg.channel.send(`Format: ${config.prefix}remove index`)
+		}
+
+	}
+	if (msg.content === `${config.prefix}queue`) {
+		print_queue(msg);
+	}
+	if (msg.content === `${config.prefix}skip`) {
+		play_next_song();
+	}
+	if (msg.content === `${config.prefix}clear`) {
+		clear_queue();
+	}
 	if (msg.content === `${config.prefix}login`) {
 		login(msg);
 	}
@@ -322,6 +606,7 @@ client.on('message', msg => {
 	}
 	if (msg.content === `${config.prefix}slogin`) {
 		lastloginmsg = msg;
+		login(msg);
 		msg.channel.send('Please login at: http://localhost:3000/api/spotify/login');
 	}
 	if (msg.content === `${config.prefix}slogout`) {

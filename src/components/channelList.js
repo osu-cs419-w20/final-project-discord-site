@@ -18,8 +18,13 @@ const ChannelListContainer = styled.div`
         list-style: none;
         padding: 0;
         margin: 1rem;
+        > li:nth-of-type(1){
+            border-top: 1px solid var(--color-light-gray);
+        }
         li{
-            margin: 1rem auto;
+            margin: 0;
+            padding: .5rem .3rem;
+            border-bottom: 1px solid var(--color-light-gray);
             a{
                 img{
                     /* grid-area: icon; */

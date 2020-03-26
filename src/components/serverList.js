@@ -18,9 +18,17 @@ const ServerListContainer = styled.div`
         list-style: none;
         padding: 0;
         margin: 1rem;
+        > li:nth-of-type(1){
+            border-top: 1px solid var(--color-light-gray);
+        }
         li{
-            margin: 1rem auto;
+            margin: 0;
+            padding: .5rem .3rem;
+            border-bottom: 1px solid var(--color-light-gray);
+
             a{
+                padding: ${props => props.icon  == 'false' ? 'inherit' : '.4rem'};
+
                 display: grid;
                 grid-template-rows: 1fr max-content 1fr;
                 grid-template-columns: max-content 1fr;
@@ -109,7 +117,6 @@ function ServerList(props) {
                 // console.log("== ignoring results");
             }
         }
-        console.log()
         fetchSearchResults();
         return () => {
             controller.abort();
@@ -124,7 +131,7 @@ function ServerList(props) {
     }
 
     return (
-        <ServerListContainer>
+        <ServerListContainer {...props} >
             {error && <ErrorContainer>Error</ErrorContainer>}
             {loading ? (
                 <Spinner/>

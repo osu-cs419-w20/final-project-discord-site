@@ -14,13 +14,7 @@ const Form = styled.form`
     padding: .2rem;
     display: grid;
     grid-template-columns: 1fr max-content;
-    input{
-        background-color: var(--color-light-gray);
-        border: 1px solid var(--color-dark-gray);
-        border-radius: 2px;
-        font-size: 1.5rem;
-        color: var(--color-text);
-    }
+    
     button{
         border: 1px solid var(--color-dark-gray);
         background-color: var(--color-blue);

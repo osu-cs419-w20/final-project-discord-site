@@ -12,6 +12,7 @@ import MessageContainer from './messageContainer.js';
 import config from '../config.js';
 import { getToken } from '../redux/selectors';
 import { useSelector } from 'react-redux';
+import SpotifySongs from './spotifySongs.js';
 
 // import Discord from "discord.js/webpack";
 const Discord = require('discord.js/webpack/discord.min');
@@ -157,7 +158,8 @@ function Voice(props) {
             <h2>{props.channel.name || "Channel"}</h2>
 
             {loading ? <Spinner/> :
-                <div>Voice</div>
+                <div>voice</div>
+                // <SpotifySongs/>
             }
 
         </VoiceContainer>

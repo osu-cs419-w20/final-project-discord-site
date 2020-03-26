@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {useParams} from 'react-router-dom';
 import queryString from 'query-string';
 import styled from '@emotion/styled';
 import fetch from 'isomorphic-unfetch';
@@ -7,23 +6,29 @@ import {baseUrlSpotify} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
 import config from '../config.js';
+import PlaylistList from './playlistList';
 
-import { useDispatch } from 'react-redux';
+import { getAuthSpotifyUser } from '../redux/selectors';
+import { useSelector, useDispatch } from 'react-redux';
 import { initUser } from '../redux/actions';
 
 const SpotifyMainContainer = styled.main`
     display: grid;
     grid-template-columns: 1fr 2fr max-content 2fr 1fr;
-    grid-template-rows: 1fr 5fr 1fr;
+    grid-template-rows: max-content 70vh 2rem;
     grid-template-areas:
-    " . . title . ."
+    " . title title title ."
     " . spotify spotify spotify ."
     ". . . . .";
+    max-height: 100vh;
     > h1{
         grid-area: title;
+        margin-left: auto;
+        margin-right: auto;
     }
     .container{
         grid-area: spotify;
+        overflow: scroll;
         border-radius: 2px;
         background-color: var(--color-dark-gray);
     }
@@ -31,6 +36,7 @@ const SpotifyMainContainer = styled.main`
 
 function Spotify(props) {
 
+    const [ authUser, setAuthUser ] = useState(useSelector(getAuthSpotifyUser));
     const [ user, setUser ] = useState({});
     const [ loading, setLoading ] = useState(false);
     const [ error, setError ] = useState("");
@@ -42,17 +48,14 @@ function Spotify(props) {
         let ignore = false;
         const controller = new AbortController();
         if (parsed.access_token && parsed.refresh_token){
-            dispatch(initUser(parsed.access_token, parsed.refresh_token))
         
-        
-
             async function fetchSearchResults() {
                 ignore = false;
                 let responseBody = {};
                 setLoading(true);
                 try {
                     const response = await fetch(
-                    baseUrlSpotify + `me`,
+                    `${baseUrlSpotify}me`,
                     { 
                         signal: controller.signal,
                         headers: {
@@ -76,9 +79,12 @@ function Spotify(props) {
                 
 
                 if (!ignore) {
+                    // console.log(responseBody);
                     setError("");
                     setLoading(false);
                     setUser(responseBody);
+                    setAuthUser({access_token: parsed.access_token, refresh_token: parsed.refresh_token})
+                    dispatch(initUser(parsed.access_token, parsed.refresh_token))
                 } else {
                     // console.log("== ignoring results");
                 }
@@ -91,28 +97,23 @@ function Spotify(props) {
             ignore = true;
         };
 
-    }, [parsed.access_token]);
-
-    useEffect(() => {
-        
     }, []);
 
-    function refresh(e){
-        if(props.refresh){
-            props.refresh()
-        }
-    }
 
     return (
         <SpotifyMainContainer>
             <h1> Spotify </h1>
-            {error != "" && <div>{error}</div>}
             <div className="container">
-                {!parsed.access_token ?
+                
+
+                {!authUser.access_token ?
                     <div>Login at /api/spotify/login</div> :
                     loading ? 
-                    <Spinner/> :
-                    <div> logged in as {user.display_name ? user.display_name : ""}</div>
+                        error != "" ? 
+                            <div>{error}</div> : 
+                            <Spinner/> 
+                        :
+                        <PlaylistList />
                 }
             </div>
             

@@ -1,10 +1,11 @@
 /** @jsx jsx */
 
 import React , {useState, useEffect, useRef} from 'react';
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { jsx, css } from '@emotion/core'
 import { logoutUser } from '../redux/actions';
 import { NavLink } from 'react-router-dom';
+import { getAuthSpotifyUser } from '../redux/selectors';
 
 const styles = css`
     margin: 0;
@@ -125,6 +126,8 @@ function Navbar() {
     const [ closed, setClosed ] = useState(true);
     const dispatch = useDispatch();
     const wrapperRef = useRef(null);
+    const spotify = useSelector(getAuthSpotifyUser);
+
 
     function useOutsideAlerter(ref) {
         /**
@@ -162,8 +165,9 @@ function Navbar() {
             <button onClick={toggleDrawer} />
             <NavLink className="title" exact to="/"><h1>Discord Dev Bot</h1></NavLink>
             <div className="linkContainer">
-                <NavLink to="/server"> Server List </NavLink>
-                <NavLink to="/message"> Message Bot</NavLink>
+                <NavLink to="/server">Server List</NavLink>
+                <NavLink to="/message">Message Bot</NavLink>
+                {spotify.access_token && <NavLink to="/spotify">Play Music</NavLink>}
                 <NavLink exact
                     to="/" 
                     onClick={() => dispatch(logoutUser())}>
