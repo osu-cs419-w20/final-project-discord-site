@@ -82,16 +82,10 @@ const SpotifySongsMainContainer = styled.main`
 
 function SpotifySongs() {
     const [ refresh, setRefresh ] = useState(0);
-    const [ channel, setChannel ] = useState({});
     const [ songOpen, setSongOpen ] = useState(true);
 
     function incRefresh(){
         setRefresh(refresh + 1);
-        setSongOpen(true);
-    }
-    function updateChannel(ch){
-        // console.log("serverchannels ", ch);
-        setChannel(ch);
         setSongOpen(true);
     }
     function toggleSong(){

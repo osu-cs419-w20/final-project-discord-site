@@ -4,8 +4,6 @@ import styled from '@emotion/styled';
 import fetch from 'isomorphic-unfetch';
 import {baseUrlSpotify} from '../App.js';
 import Spinner from './spinner.js';
-import ErrorContainer from './errorContainer.js';
-import config from '../config.js';
 import PlaylistList from './playlistList';
 
 import { getAuthSpotifyUser } from '../redux/selectors';
@@ -37,7 +35,7 @@ const SpotifyMainContainer = styled.main`
 function Spotify(props) {
 
     const [ authUser, setAuthUser ] = useState(useSelector(getAuthSpotifyUser));
-    const [ user, setUser ] = useState({});
+    // const [ user, setUser ] = useState({});
     const [ loading, setLoading ] = useState(false);
     const [ error, setError ] = useState("");
     const dispatch = useDispatch();
@@ -51,7 +49,7 @@ function Spotify(props) {
         
             async function fetchSearchResults() {
                 ignore = false;
-                let responseBody = {};
+                // let responseBody = {};
                 setLoading(true);
                 try {
                     const response = await fetch(
@@ -67,7 +65,7 @@ function Spotify(props) {
                         setError("unauthorized")
                         ignore = true;
                     }
-                    responseBody = await response.json();
+                    // responseBody = await response.json();
                 } catch (e) {
                     if (e instanceof DOMException) {
                         console.log("== HTTP request aborted");
@@ -82,7 +80,7 @@ function Spotify(props) {
                     // console.log(responseBody);
                     setError("");
                     setLoading(false);
-                    setUser(responseBody);
+                    // setUser(responseBody);
                     setAuthUser({access_token: parsed.access_token, refresh_token: parsed.refresh_token})
                     dispatch(initUser(parsed.access_token, parsed.refresh_token))
                 } else {
@@ -97,7 +95,7 @@ function Spotify(props) {
             ignore = true;
         };
 
-    }, []);
+    }, [parsed.access_token, parsed.refresh_token, dispatch]);
 
 
     return (
@@ -109,7 +107,7 @@ function Spotify(props) {
                 {!authUser.access_token ?
                     <div>Login at /api/spotify/login</div> :
                     loading ? 
-                        error != "" ? 
+                        error !== "" ? 
                             <div>{error}</div> : 
                             <Spinner/> 
                         :

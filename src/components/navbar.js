@@ -1,6 +1,6 @@
 /** @jsx jsx */
 
-import React , {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { jsx, css } from '@emotion/core'
 import { logoutUser } from '../redux/actions';

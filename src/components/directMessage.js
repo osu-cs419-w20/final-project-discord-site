@@ -1,11 +1,9 @@
-import React, { useState, useEffect }from 'react';
+import React from 'react';
 import { useSelector } from 'react-redux';
 import styled from '@emotion/styled';
 import Chat from './chat';
 import GetAuthChannel from './getAuthChannel';
-import {baseUrl} from '../App.js';
-import config from '../config.js';
-import {getAuthDiscord, getToken} from '../redux/selectors';
+import {getAuthDiscord} from '../redux/selectors';
 
 
 const DirectMessageMainContainer = styled.main`
@@ -41,53 +39,53 @@ const DirectMessageMainContainer = styled.main`
 
 function DirectMessage() {
     const authDiscord = useSelector(getAuthDiscord);
-    const token = useSelector(getToken);
+    // const token = useSelector(getToken);
 
     
-    useEffect(() => {
-        let ignore = false;
-        const controller = new AbortController();
+    // useEffect(() => {
+    //     let ignore = false;
+    //     const controller = new AbortController();
 
-        async function fetchSearchResults() {
-            ignore = false;
-            let responseBody = {};
-            try {
-                const response = await fetch(
-                baseUrl + `/channels/${authDiscord.channel.id}`,
-                { 
-                    signal: controller.signal,
-                    headers: {
-                        'Authorization': `Bot ${token}`
-                    }
-                }
-                );
-                responseBody = await response.json();
-            } catch (e) {
-                if (e instanceof DOMException) {
-                    ignore = true;
-                    console.log("== HTTP request aborted");
-                } else {
-                    console.log(e);
-                }
-            }
-            if (responseBody.message === "You are being rate limited."){
-                ignore = true;
-                console.log("Discord API rate limit for Servers, retrying in: ", responseBody.retry_after)
-                setTimeout(fetchSearchResults, responseBody.retry_after);
-            }
-            if (!ignore) {
-                //  setAuthChannel(responseBody);
-            } 
-        }
-        console.log(authDiscord);
-        if(authDiscord){
-            // fetchSearchResults();
-        }
-        return () => {
-            controller.abort();
-            ignore = true;
-        };
-    }, [authDiscord]);
+    //     async function fetchSearchResults() {
+    //         ignore = false;
+    //         let responseBody = {};
+    //         try {
+    //             const response = await fetch(
+    //             baseUrl + `/channels/${authDiscord.channel.id}`,
+    //             { 
+    //                 signal: controller.signal,
+    //                 headers: {
+    //                     'Authorization': `Bot ${token}`
+    //                 }
+    //             }
+    //             );
+    //             responseBody = await response.json();
+    //         } catch (e) {
+    //             if (e instanceof DOMException) {
+    //                 ignore = true;
+    //                 console.log("== HTTP request aborted");
+    //             } else {
+    //                 console.log(e);
+    //             }
+    //         }
+    //         if (responseBody.message === "You are being rate limited."){
+    //             ignore = true;
+    //             console.log("Discord API rate limit for Servers, retrying in: ", responseBody.retry_after)
+    //             setTimeout(fetchSearchResults, responseBody.retry_after);
+    //         }
+    //         if (!ignore) {
+    //             //  setAuthChannel(responseBody);
+    //         } 
+    //     }
+    //     console.log(authDiscord);
+    //     if(authDiscord){
+    //         // fetchSearchResults();
+    //     }
+    //     return () => {
+    //         controller.abort();
+    //         ignore = true;
+    //     };
+    // }, [authDiscord]);
 
 
     return (

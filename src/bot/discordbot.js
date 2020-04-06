@@ -18,12 +18,27 @@ const cookieParser = require('cookie-parser');
 const fetch = require('isomorphic-unfetch');
 const ytdl = require('ytdl-core');
 
-const client = new Discord.Client();
+const Client = class extends Discord.Client {
+	constructor(config) {
+		super({
+			disableEveryone: true,
+			disabledEvents: ['TYPING_START'],
+		});
+
+		// this.commands = new Collection();
+
+		this.queue = new Map();
+
+		this.config = config;
+	}
+};
+
+const client = new Client();
 
 //spotify consts
 const client_id = config.client_id;
 const client_secret = config.client_secret;
-const redirect_uri = 'http://localhost:3000/api/spotify/callback'; // Your redirect uri
+const redirect_uri = 'http://192.168.0.243/disc/api/spotify/callback'; // Your redirect uri
 
 //spotify vars
 var g_auth_token;
@@ -38,7 +53,7 @@ const youtubeAPI = "https://www.googleapis.com/youtube/v3";
 
 //login vars
 var authUser = false;
-var authUserId = null;
+var authUserObject = {};
 const authUserIds = config.userIDs;
 
 //music queue vars
@@ -46,9 +61,10 @@ function Song(url, name, addedBy) {
 	this.url = url;
 	this.name = name;
 	this.addedBy = addedBy;
-	this.next = null;
-	this.prev = null;
 }
+
+
+// let queue = new Map();
 let current_song = null;
 let song_playing = false;
 
@@ -70,58 +86,147 @@ function reset_state(){
 	current_song = null;
 }
 //music queue functions
-async function stream_song(connection, channel){
-	const streamOptions = { seek: 0, volume: 1 };//{ type: 'opus' };
+// async function stream_song(connection, channel){
+// 	const streamOptions = { seek: 0, volume: 1 };//{ type: 'opus' };
 
-	// console.log("joined channel");
-	console.log("playing: ", current_song.name);
-	console.log(current_song.url);
-	const stream = ytdl(current_song.url, {
-					filter: 'audioonly',
-					highWaterMark: 1<<25
-				});
-	const dispatcher = connection.play(stream, streamOptions);
-	song_playing = true;
-	// stream.on('end', ()=> {
-	// 	console.log("stream end");
-	// })
-	stream.on("end", end => {
-		console.log("stream end");
-		if(current_song.next){
-			console.log("playing next");
-			const next = current_song.next;
-			remove_from_queue(current_song);
-			current_song = next;
-			stream_song(connection, channel)
-		} else {
-			song_playing = false;
-			current_song = null;
-			console.log("left channel");
-			channel.leave();
-		}
+// 	// console.log("joined channel");
+// 	console.log("playing: ", current_song.name);
+// 	console.log(current_song.url);
+// 	const stream = ytdl(current_song.url, {
+// 					filter: 'audioonly',
+// 					highWaterMark: 1<<25
+// 				});
+// 	const dispatcher = connection.play(stream, streamOptions);
+// 	song_playing = true;
+// 	// stream.on('end', ()=> {
+// 	// 	console.log("stream end");
+// 	// })
+// 	stream.on("end", end => {
+// 		console.log("stream end");
+// 		if(current_song.next){
+// 			console.log("playing next");
+// 			const next = current_song.next;
+// 			remove_from_queue(current_song);
+// 			current_song = next;
+// 			stream_song(connection, channel)
+// 		} else {
+// 			song_playing = false;
+// 			current_song = null;
+// 			console.log("left channel");
+// 			channel.leave();
+// 		}
 		
-	});
+// 	});
+// }
+function play(guildid, song) {
+	console.log("song", song);
+	const serverQueue = client.queue.get(guildid);
+	if (!song) {
+		serverQueue.voiceChannel.leave();
+		client.queue.delete(guildid);
+		return;
+	}
+	const dispatcher = serverQueue.connection
+    .play(ytdl(song.url), { filter: 'audioonly', highWaterMark: 1<<25 })
+    .on("finish", () => {
+		console.log("finish event hit, playing next song")
+        serverQueue.songs.shift();
+        play(guildid, serverQueue.songs[0]);
+	})
+	.on("end", () => {
+		console.log("end event hit");
+        // serverQueue.songs.shift();
+        // play(guild, serverQueue.songs[0]);
+	})
+	.on("error", error => console.error("error event: ", error));
+	
+	dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+	if(serverQueue.textChannel) {serverQueue.textChannel.send(`Playing: **${song.name}**`);}
 }
 
-async function play(channel){
-	if (channel){
-		channel.join().then(async connection => {
-			stream_song(connection, channel)
-		}).catch(err => console.log(err));
-		
+function skip(message) {
+	const serverQueue = client.queue.get(message.guild.id);
+
+	if (!message.member.voice.channel){
+		message.channel.send("You have to be in a voice channel to stop the music!");
+		return;
+	}
+	if (!serverQueue){
+		message.channel.send("There is no song that I could skip!");
+		return;
+	}
+	// console.log(serverQueue.connection);
+	// console.log(serverQueue.connection.dispatcher);
+	// serverQueue.connection.dispatcher.end();
+	serverQueue.songs.shift();
+	play(message.guild.id, serverQueue.songs[0]);
+}
+function stop(message) {
+	const serverQueue = client.queue.get(message.guild.id);
+
+	if (!message.member.voice.channel){
+		message.channel.send( "You have to be in a voice channel to stop the music!" );
+		return;
+	}
+	if (serverQueue){
+		serverQueue.songs = [];
+		play(message.guild.id, serverQueue.songs[0]);
 	}
 }
 
-async function start_playing(msg = null){
-	var voiceChannel = msg ? msg.member.voice.channel: null /*find_channel(authUserId)*/;
-	// console.log(voiceChannel);
-	play(voiceChannel);
+function remove(message, index){
+	const serverQueue = client.queue.get(message.guild.id);
+
+	console.log(!!serverQueue)
+	console.log(!!serverQueue.songs)
+	if(!(serverQueue && serverQueue.songs)){
+		message.channel.send("There are no songs in the queue to remove")
+		return;
+	}
+	if(index >= serverQueue.songs.length){
+		message.channel.send("The song you have chosen is out of range")
+		return;
+	}
+	serverQueue.songs.splice(index, 1);
+}
+
+// async function play(channel){
+// 	if (channel){
+// 		channel.join().then(async connection => {
+// 			stream_song(connection, channel)
+// 		}).catch(err => console.log(err));
+		
+// 	}
+// }
+
+
+// async function start_playing(msg = null){
+// 	var voiceChannel = msg ? msg.member.voice.channel: null /*find_channel(authUserId)*/;
+// 	// console.log(voiceChannel);
+// 	play(voiceChannel);
 	
 
+// }
+
+
+//https://stackoverflow.com/questions/5717093/check-if-a-javascript-string-is-a-url
+function validURL(str) {
+	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+		'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+		'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+		'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+		'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+	return !!pattern.test(str);
 }
+
 
 async function get_song(query, user, msg = null){
 
+	if(validURL(query)){
+		const songInfo = await ytdl.getInfo(query);
+		return new Song(songInfo.video_url, songInfo.title, user);
+	}
 
 	const response = await fetch(
 		`${youtubeAPI}/search?type=video&part=snippet&maxResults=25&q=${query}&key=${config.youtube_key}`,
@@ -140,109 +245,241 @@ async function get_song(query, user, msg = null){
 					 user)
 }
 
-function add_after(loc,toadd){
-	if(loc && toadd){
-		let temp = loc.next;
-		loc.next = toadd;
-		toadd.prev = loc;
-		toadd.next = temp;
-		if(toadd.next){
-			toadd.next.prev = toadd;
+async function add_to_queue(serverQueue, voiceChannel, query, msg, idx = -1){
+
+	const song = await get_song(query, msg.member.displayName, msg);
+	if (!serverQueue) {
+		const queueConstruct = {
+			textChannel: msg.channel,
+			voiceChannel: voiceChannel,
+			connection: null,
+			dispatcher: null,
+			songs: [],
+			volume: 5,
+			playing: true,
+		};
+		client.queue.set(msg.guild.id, queueConstruct);
+		queueConstruct.songs.push(song);
+		
+		try {
+			// Here we try to join the voicechat and save our connection into our object.
+			var connection = await voiceChannel.join();
+			queueConstruct.connection = connection;
+			// Calling the play function to start a song
+			play(msg.guild.id, queueConstruct.songs[0]);
+		} catch (err) {
+			// Printing the error message if the bot fails to join the voicechat
+			console.log(err);
+			client.queue.delete(msg.guild.id);
+			msg.channel.send(err);
+			return ;
 		}
+	}else {
+		if(!serverQueue.textChannel){
+			serverQueue.textChannel = msg.channel;
+		}
+		if (idx === -1){
+			serverQueue.songs.push(song);
+		} else {
+			serverQueue.songs.splice(idx, 0, song);
+		}
+		console.log(serverQueue.songs);
+		// message.channel.send(`${song.title} has been added to the queue!`);
+		return;
 	}
+
 }
 
-async function add_to_queue_at(query, user, idx, msg){
-	if(current_song){
-		let temp = current_song;
-		for (let i = 0; i < idx; i++) {
-			if(temp && temp.next){
-				temp = temp.next;
+async function add_to_queue_web(guildId, query, voiceChannelId = 0, idx = -1){
+	const user = authUserObject;
+	// console.log("presence", user.presence)
+	// console.log("member ===", user.presence.member)
+	// console.log("guild ===", user.presence.member.guild)
+	// console.log("IDs ===", guildId === user.presence.member.guild.id)
+	// let guildHasUser = false;
+
+	async function found_user(fUser){
+		const voiceChannel = voiceChannelId ? 
+			client.channels.get(voiceChannelId) : 
+			fUser.voice.channel;
+		const serverQueue = client.queue.get(guildId);
+
+
+		const song = await get_song(query, `${fUser.displayName}-web`, null);
+		if (!serverQueue) {
+			const queueConstruct = {
+			textChannel: null,
+			voiceChannel: voiceChannel,
+			connection: null,
+			dispatcher: null,
+			songs: [],
+			volume: 5,
+			playing: true,
+			};
+			client.queue.set(guildId, queueConstruct);
+			queueConstruct.songs.push(song);
+
+			try {
+				// Here we try to join the voicechat and save our connection into our object.
+				var connection = await voiceChannel.join();
+				queueConstruct.connection = connection;
+				// Calling the play function to start a song
+				play(guildId, queueConstruct.songs[0]);
+			} catch (err) {
+				// Printing the error message if the bot fails to join the voicechat
+				console.log("connection error", err);
+				client.queue.delete(guildId);
+				console.log("deleted queue for ", guildId);
+				// msg.channel.send(err);
+				return ;
 			}
+		} else {
+			if (idx === -1){
+				serverQueue.songs.push(song);
+			} else {
+				serverQueue.songs.splice(idx, 0, song);
+			}
+			console.log(serverQueue.songs);
+			// message.channel.send(`${song.title} has been added to the queue!`);
+			return;
 		}
-		add_after(temp, await get_song(query, user, msg));
-	} else {
-		current_song = await get_song(query, user, msg);
-		start_playing(msg);
 	}
+	
+	let guild = client.guilds.resolve(guildId);
+	guild.members.fetch(user.id).then(found_user).catch(console.log);
+
 }
 
-async function add_to_queue(query, user, msg){
-	if(current_song){
-		let temp = current_song;
-		while(temp.next){
-			temp = temp.next;
-		}
-		add_after(temp, await get_song(query, user, msg));
-	} else {
-		current_song = await get_song(query, user, msg);
-		start_playing(msg);
-	}
-}
-async function queue_next(query, user, msg){
-	if(current_song){
-		add_after(current_song, await get_song(query, user, msg));
-	} else {
-		current_song = await get_song(query, user, msg);
-		start_playing(msg);
-	}
-}
-function clear_queue(){
-	clear_queue_from(current_song);
-	current_song = null;
-}
-function clear_queue_from(song){
-	if(song){
-		song.prev = null;
-		clear_queue_from(song.next);
-		song.next = null;
-	}
-}
-function remove_from_queue(idx){
-	let temp = current_song;
-	for (let i = 0; i < idx; i++) {
-		// console.log(temp);
-		if(temp){
-			temp = temp.next;
-		}
-	}
-	if(temp.prev){
-		temp.prev.next = temp.next;
-	}
-	if(temp.next){
-		temp.next.prev = temp.prev;
-	}
-	temp.next = null;
-	temp.prev = null;
-}
 function print_queue(msg){
+	const serverQueue = client.queue.get(msg.guild.id);
 	let res = "";
-	let i = 1;
-	if(current_song){
-		let temp = current_song;
-		while(temp.next){
-			res += `${i++}: ${temp.name}, added by: ${temp.addedBy}\n`;
-			temp = temp.next;
+	let i = 0;
+
+	if(!serverQueue || !serverQueue.songs){
+		msg.channel.send("Queue empty");
+		return;
+	}
+	if(serverQueue.songs.length >= 1){
+		while(i < serverQueue.songs.length - 1){
+			console.log(serverQueue.songs[i]);
+			res += `${i+1}: ${serverQueue.songs[i].name}, added by: ${serverQueue.songs[i].addedBy}\n`;
+			i++;
 		}
-		res += `${i}: ${temp.name}, added by: ${temp.addedBy}`;
+		res += `${i+1}: ${serverQueue.songs[i].name}, added by: ${serverQueue.songs[i].addedBy}`;
 	} else {
-		res = "Queue empty"
+		res = "Queue empty";
 	}
 	msg.channel.send(res);
 }
-function play_next_song(){
-	current_song = current_song.next;
-	current_song.prev.next = null;
-	current_song.prev = null;
-}
+
 
 function login(msg){
 	if (authUserIds.includes(msg.author.id)){
 		authUserId = msg.author.id;
+		authUserObject = msg.author;
 		authUser = true;
 		msg.react('✅');
+		return true;
 	} else {
 		msg.react('❌');
+		return false;
+	}
+}
+
+function check_able(msg){
+	const voiceChannel = msg.member.voice.channel;
+	if (!voiceChannel){
+		msg.channel.send("You must be in a voice channel to play music");
+		return false;
+	}
+	const permissions = voiceChannel.permissionsFor(msg.client.user);
+	if (!permissions.has("CONNECT") || !permissions.has("SPEAK")) {
+		msg.channel.send("Bot needs permission to your voice channel");
+		return false;
+	}
+	return true
+}
+
+async function commandPlay(msg){
+	const serverQueue = client.queue.get(msg.guild.id);
+	if (!check_able(msg)) {
+		return;
+	}
+	const splitmsg = msg.content.split(' ');
+	if (splitmsg.length >= 2){
+		var query = splitmsg.slice(1,splitmsg.length).join(' ');
+		add_to_queue(serverQueue, msg.member.voice.channel, query, msg)
+		msg.react('✅');
+	} else {
+		msg.channel.send(`Format: ${config.prefix}play URL`)
+	}
+}
+
+async function commandPlayAt(msg){
+	const serverQueue = client.queue.get(msg.guild.id);
+	if (!check_able(msg)) {
+		return;
+	}
+	const splitmsg = msg.content.split(' ');
+	if (splitmsg.length >= 3){
+		var idx = parseInt(msg.content.split(' ')[1]) - 1;
+		var query = splitmsg.slice(2,splitmsg.length).join(' ');
+		add_to_queue(serverQueue, msg.member.voice.channel, query, msg, idx)
+		msg.react('✅');
+	} else {
+		msg.channel.send(`Format: ${config.prefix}playat index URL`)
+	}
+}
+
+async function commandPlayNext(msg){
+	const serverQueue = client.queue.get(msg.guild.id);
+	if (!check_able(msg)) {
+		return;
+	}
+	
+	const splitmsg = msg.content.split(' ');
+	if (splitmsg.length >= 2){
+		var query = splitmsg.slice(1,splitmsg.length).join(' ');
+		add_to_queue(serverQueue, msg.member.voice.channel, query, msg, 1)
+		msg.react('✅');
+	} else {
+		msg.channel.send(`Format: ${config.prefix}playnext URL`)
+	}
+}
+
+async function commandSkip(msg){
+	if (!check_able(msg)) {
+		return;
+	}
+	
+	skip(msg);
+}
+
+async function commandStop(msg){
+	if (!check_able(msg)) {
+		return;
+	}
+	stop(msg);
+}
+
+async function commandRemove(msg){
+	if (!check_able(msg)) {
+		return;
+	}
+
+	const splitmsg = msg.content.split(' ');
+	if (splitmsg.length === 2){
+		var idx = parseInt(msg.content.split(' ')[1]) - 1;
+		// serverQueue.songs.splice(index, 1);
+		if(idx === 1){
+			msg.channel.send(`Can't remove current song, use ${config.prefix}skip instead`)
+		} else {
+			remove(msg, idx);
+			// remove_from_queue(idx)
+			msg.react('✅');
+		}
+	} else {
+		msg.channel.send(`Format: ${config.prefix}remove index`)
 	}
 }
 
@@ -380,17 +617,27 @@ app.get('/api/login', function(req, res) {
 
 app.post('/api/song', function(req, res) {
 
+	let guildId = req.query.g;
 	let q = req.query.q;
+
 	let idx = parseInt(req.query.idx);
 	if(! typeof(idx)){
 		idx = -1;
 	}
-	console.log("adding at: ",idx)
-	if(idx === -1){
-		add_to_queue(q,"web", null);
-	} else {
-		add_to_queue_at(q,"web",idx, null)
+	let voiceChannelId = parseInt(req.query.vc);
+	if(! typeof(voiceChannelId)){
+		voiceChannelId = 0;
 	}
+
+	add_to_queue_web(guildId, q, voiceChannelId = 0, idx = -1)
+	console.log("adding at: ",idx)
+	
+	
+	// if(idx === -1){
+	// 	add_to_queue(q,"web", null);
+	// } else {
+	// 	add_to_queue_at(q,"web",idx, null)
+	// }
 
 	res.status(200).end();
 });
@@ -491,7 +738,7 @@ app.get('/api/spotify/callback', function(req, res) {
         };
 		current_user_playlists = {};
 		gen_playlists(options);
-		const url = "http://" + config.appURL + '/spotify' + '#' +
+		const url = config.appURL + '/spotify' + '#' +
 		querystring.stringify({
 		  access_token: access_token,
 		  refresh_token: refresh_token
@@ -539,7 +786,14 @@ client.on('ready', () => {
 	  console.log("ready!");
 });
 
-client.on('message', msg => {
+client.on('message', async msg => {
+	if (!msg.content.startsWith(config.prefix)){ 
+		return;
+	}
+
+	// const serverQueue = queue.get(message.guild.id);
+
+
 	if (msg.content === `${config.prefix}ping`) {
 		msg.channel.send('pong');
 	}
@@ -547,56 +801,25 @@ client.on('message', msg => {
 		find_cargo_times(msg);
 	}
 	if (msg.content.startsWith(`${config.prefix}play `)) {
-		const splitmsg = msg.content.split(' ');
-		if (splitmsg.length >= 2){
-			var query = splitmsg.slice(1,splitmsg.length).join(' ');
-			add_to_queue(query,msg.author.username, msg)
-			msg.react('✅');
-		} else {
-			msg.channel.send(`Format: ${config.prefix}play URL`)
-		}
+		commandPlay(msg);
 	}
 	if (msg.content.startsWith(`${config.prefix}playat `)) {
-		const splitmsg = msg.content.split(' ');
-		if (splitmsg.length >= 3){
-			var idx = parseInt(msg.content.split(' ')[1]) - 1;
-			var query = splitmsg.slice(2,splitmsg.length).join(' ');
-			add_to_queue_at(query,msg.author.username,idx, msg)
-			msg.react('✅');
-		} else {
-			msg.channel.send(`Format: ${config.prefix}playat index URL`)
-		}
+		commandPlayAt(msg);
 	}
 	if (msg.content.startsWith(`${config.prefix}playnext `)) {
-		const splitmsg = msg.content.split(' ');
-		if (splitmsg.length >= 2){
-			var query = splitmsg.slice(1,splitmsg.length).join(' ');
-			queue_next(query,msg.author.username, msg)
-			msg.react('✅');
-		} else {
-			msg.channel.send(`Format: ${config.prefix}playnext URL`)
-		}
-
+		commandPlayNext(msg);
 	}
 	if (msg.content.startsWith(`${config.prefix}remove `)) {
-		const splitmsg = msg.content.split(' ');
-		if (splitmsg.length === 2){
-			var idx = parseInt(msg.content.split(' ')[1]) - 1;
-			remove_from_queue(idx)
-			msg.react('✅');
-		} else {
-			msg.channel.send(`Format: ${config.prefix}remove index`)
-		}
-
+		commandRemove(msg)
 	}
 	if (msg.content === `${config.prefix}queue`) {
 		print_queue(msg);
 	}
 	if (msg.content === `${config.prefix}skip`) {
-		play_next_song();
+		commandSkip(msg);
 	}
-	if (msg.content === `${config.prefix}clear`) {
-		clear_queue();
+	if (msg.content === `${config.prefix}stop`) {
+		commandStop(msg);
 	}
 	if (msg.content === `${config.prefix}login`) {
 		login(msg);
@@ -606,8 +829,9 @@ client.on('message', msg => {
 	}
 	if (msg.content === `${config.prefix}slogin`) {
 		lastloginmsg = msg;
-		login(msg);
-		msg.channel.send('Please login at: http://localhost:3000/api/spotify/login');
+		if (login(msg)){
+			msg.channel.send('Please login at: http://192.168.0.243:3000/api/spotify/login');
+		}
 	}
 	if (msg.content === `${config.prefix}slogout`) {
 		msg.channel.send(current_login_name + " logged out");

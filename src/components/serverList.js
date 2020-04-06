@@ -5,7 +5,6 @@ import fetch from 'isomorphic-unfetch';
 import {baseUrl} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
-import config from '../config.js';
 import { getToken } from '../redux/selectors';
 import { useSelector } from 'react-redux';
 
@@ -27,7 +26,7 @@ const ServerListContainer = styled.div`
             border-bottom: 1px solid var(--color-light-gray);
 
             a{
-                padding: ${props => props.icon  == 'false' ? 'inherit' : '.4rem'};
+                padding: ${props => props.icon  === 'false' ? 'inherit' : '.4rem'};
 
                 display: grid;
                 grid-template-rows: 1fr max-content 1fr;
@@ -122,7 +121,7 @@ function ServerList(props) {
             controller.abort();
             ignore = true;
         };
-    }, []);
+    }, [token]);
 
     function refresh(e){
         if(props.refresh){
@@ -140,13 +139,13 @@ function ServerList(props) {
                 {servers.map(server => (
                     <li key={server.id}>
                         <Link 
-                            className={`${props.icon == 'false' ? "noIcon" : ""} 
-                                        ${server.id == serverID ? 'active' : ''}`} 
+                            className={`${props.icon === 'false' ? "noIcon" : ""} 
+                                        ${server.id === serverID ? 'active' : ''}`} 
                             to={`/server/${server.id}`}
                             onClick={e => refresh(e)}
                         >
-                            { props.icon != 'false' && 
-                                <img src={`https://cdn.discordapp.com/icons/${server.id}/${server.icon}`} /> }
+                            { props.icon !== 'false' && 
+                                <img alt="server icon" src={`https://cdn.discordapp.com/icons/${server.id}/${server.icon}`} /> }
                             <span>{server.name}</span>
                         </Link>
                     </li>

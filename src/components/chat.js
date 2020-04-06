@@ -12,7 +12,6 @@ import ErrorContainer from './errorContainer.js';
 import WarningContainer from './warningContainer.js';
 import MessageInput from './messageInput.js';
 import MessageContainer from './messageContainer.js';
-import config from '../config.js';
 // import Discord from "discord.js/webpack";
 const Discord = require('../../node_modules/discord.js/webpack/discord.min.js');
 // const Discord = require("discord.js");
@@ -61,7 +60,11 @@ function Chat(props) {
     const [ ready, setReady ] = useState(false);
     const [ error, setError ] = useState(false);
     const [ client, setClient ] = useState(new Discord.Client());
-    // const [sticky] = useSticky();
+    // doing this to remove a warning
+    if(0){
+        setClient(new Discord.Client());
+    }
+
 
     //login bot on load
     useEffect(() => {
@@ -76,7 +79,7 @@ function Chat(props) {
             setReady(false)
             console.log("Chat Client destroyed");
         };
-    }, [token]);
+    }, [token, client]);
 
     //fetch starting channel messages using discord API
     useEffect(() => {
@@ -131,7 +134,7 @@ function Chat(props) {
             controller.abort();
             ignore = true;
         };
-    }, [props.channel]);
+    }, [props.channel, token]);
 
     //update the list when new messages are received from discord.js
     
@@ -146,7 +149,7 @@ function Chat(props) {
         return () => {
             client.removeListener('message', callback);
         };
-    }, [messages]);
+    }, [messages, props.channel.id, client]);
 
     return (
         <ChatContainer>

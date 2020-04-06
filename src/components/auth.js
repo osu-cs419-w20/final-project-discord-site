@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from '@emotion/styled';
 import config from '../config';
 import { useDispatch } from 'react-redux';
@@ -38,66 +38,114 @@ const AuthContainer = styled.main`
 function Auth() {
 
     const [ error, setError ] = useState(false);
-
     const dispatch = useDispatch();
+
+    const tokenCallback = useCallback(
+        async (auto = false) => {
+            let ignore = false;
+            const controller = new AbortController();
+            console.log(auto);
+
+            async function fetchSearchResults() {
+                ignore = false;
+                let responseBody = {};
+                // setLoading(true);
+                try {
+                    const response = await fetch(
+                        `${config.appURL}/api/login`,
+                    { 
+                        signal: controller.signal,
+                    }
+                    );
+                    if (auto!==true && response.status === 401){
+                        ignore = true;
+                        setError(true);
+                    } else {
+                        responseBody = await response.json();
+                    }
+                } catch (e) {
+                    if (e instanceof DOMException) {
+                        console.log("== HTTP request aborted");
+                    } else {
+                        setError(true);
+                        console.log(e);
+                    }
+                }
+                if (!ignore) {
+                    setError(false);
+                    dispatch(addToken(responseBody.token));
+                } else {
+                    // console.log("== ignoring results");
+                }
+            }
+            console.log()
+            fetchSearchResults();
+            return () => {
+                controller.abort();
+                ignore = true;
+            };
+        },
+        [dispatch],
+      );
+
     
 
 
-    async function getToken(auto){
-        let ignore = false;
-        const controller = new AbortController();
-        console.log(auto);
+    // async function getToken(auto = false){
+    //     let ignore = false;
+    //     const controller = new AbortController();
+    //     console.log(auto);
 
-        async function fetchSearchResults() {
-            ignore = false;
-            let responseBody = {};
-            // setLoading(true);
-            try {
-                const response = await fetch(
-                    `/api/login`,
-                { 
-                    signal: controller.signal,
-                }
-                );
-                if (auto!==true && response.status === 401){
-                    ignore = true;
-                    setError(true);
-                } else {
-                    responseBody = await response.json();
-                }
-            } catch (e) {
-                if (e instanceof DOMException) {
-                    console.log("== HTTP request aborted");
-                } else {
-                    setError(true);
-                    console.log(e);
-                }
-            }
-            if (!ignore) {
-                setError(false);
-                dispatch(addToken(responseBody.token));
-            } else {
-                // console.log("== ignoring results");
-            }
-        }
-        console.log()
-        fetchSearchResults();
-        return () => {
-            controller.abort();
-            ignore = true;
-        };
-    }
+    //     async function fetchSearchResults() {
+    //         ignore = false;
+    //         let responseBody = {};
+    //         // setLoading(true);
+    //         try {
+    //             const response = await fetch(
+    //                 `/api/login`,
+    //             { 
+    //                 signal: controller.signal,
+    //             }
+    //             );
+    //             if (auto!==true && response.status === 401){
+    //                 ignore = true;
+    //                 setError(true);
+    //             } else {
+    //                 responseBody = await response.json();
+    //             }
+    //         } catch (e) {
+    //             if (e instanceof DOMException) {
+    //                 console.log("== HTTP request aborted");
+    //             } else {
+    //                 setError(true);
+    //                 console.log(e);
+    //             }
+    //         }
+    //         if (!ignore) {
+    //             setError(false);
+    //             dispatch(addToken(responseBody.token));
+    //         } else {
+    //             // console.log("== ignoring results");
+    //         }
+    //     }
+    //     console.log()
+    //     fetchSearchResults();
+    //     return () => {
+    //         controller.abort();
+    //         ignore = true;
+    //     };
+    // }
 
     useEffect(() => {
-        getToken(true);
-    }, []);
+        tokenCallback(true);
+    }, [tokenCallback]);
 
     return (
         <AuthContainer>
             <h1>Log in</h1>
             <p>Enter {config.prefix}login in Discord then click "I've logged in"</p>
             {error && <ErrorContainer>Invalid login</ErrorContainer>}
-            <button onClick={getToken}>I've logged in</button>
+            <button onClick={tokenCallback}>I've logged in</button>
         </AuthContainer>
     );
 }

@@ -5,7 +5,6 @@ import fetch from 'isomorphic-unfetch';
 import {baseUrl} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
-import config from '../config.js';
 import { getToken } from '../redux/selectors';
 import { useSelector } from 'react-redux';
 
@@ -124,7 +123,7 @@ function ChannelList(props) {
             controller.abort();
             ignore = true;
         };
-    }, [props.refresh, serverID]);
+    }, [props.refresh, serverID, token]);
     function openChat(channel){
         if (props.openChat){
             setOpenChannel(channel);
@@ -143,8 +142,12 @@ function ChannelList(props) {
                 <li key="text"> Text Channels </li>
                 {textChannels.map(channel => (
                     <li key={channel.id}>
-                        <a 
-                            onClick={() => openChat(channel)}
+                        <a  
+                            href="/open-chat"
+                            onClick={(e) => {
+                                openChat(channel)
+                                e.preventDefault();
+                             }}
                             className={openChannel.id === channel.id ? "active" : ""}>
                             <span>{channel.name}</span>
                         </a>
@@ -153,8 +156,12 @@ function ChannelList(props) {
                 <li key="voice"> Voice Channels </li>
                 {voiceChannels.map(channel => (
                     <li key={channel.id}>
-                        <a 
-                            onClick={() => openChat(channel)}
+                        <a  
+                            href="/open-voice"
+                            onClick={(e) => {
+                                openChat(channel)
+                                e.preventDefault();
+                             }}
                             className={openChannel.id === channel.id ? "active" : ""}>
                             <span>{channel.name}</span>
                         </a>

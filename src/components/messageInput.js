@@ -1,8 +1,7 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState} from 'react';
 import styled from '@emotion/styled';
 import fetch from 'isomorphic-unfetch';
 import {baseUrl} from '../App.js';
-import config from '../config.js';
 import { FaPaperPlane } from 'react-icons/fa';
 import { getToken } from '../redux/selectors';
 import { useSelector } from 'react-redux';

@@ -69,7 +69,7 @@ function PlaylistList(props) {
     const spotifyUser = useSelector(getAuthSpotifyUser);
 
     const [ playlists, setPlaylists ] = useState([]);
-    const [ playlistList, setPlaylistLists ] = useState({});
+    // const [ playlistList, setPlaylistLists ] = useState({});
     const [ loading, setLoading ] = useState(false);
     const [ error, setError ] = useState(false);
     const { playlistID } = useParams();
@@ -114,7 +114,7 @@ function PlaylistList(props) {
                     // console.log(responseBody);
                     setError("");
                     setLoading(false);
-                    setPlaylistLists(responseBody);
+                    // setPlaylistLists(responseBody);
                     // console.log("1", playlists);
                     setPlaylists(playlists => [...playlists, ...responseBody.items]);
                     // console.log("2", playlists);
@@ -156,8 +156,8 @@ function PlaylistList(props) {
                             to={`/spotify/${playlist.id}`}
                             onClick={e => refresh(e)}
                             >
-                        { props.icon != 'false' && 
-                                <img src={playlist.images[0].url} /> }
+                        { props.icon !== 'false' && 
+                                <img alt="playlist-cover-art" src={playlist.images[0].url} /> }
                         <span>{playlist.name}</span>
                         </Link>
                     </li>

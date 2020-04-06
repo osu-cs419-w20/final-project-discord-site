@@ -68,9 +68,13 @@ function Song(props) {
 
         async function sendRequest(idx) {
             ignore = false;
-            let responseBody = {};
             const query = `${props.song.track.name} ${props.song.track.artists.map(artist => artist.name).join(' ')}`
-            let params = {q:query, idx:idx};
+            let params = {
+                q: query, 
+                idx: idx, 
+                g: props.guildId, 
+                vc: props.voiceChannelId
+            };
             let url = new URL(`${config.appURL}/api/song`);
             Object.keys(params).forEach(key => url.searchParams.append(key, params[key]))
             // setLoading(true);
@@ -114,9 +118,9 @@ function Song(props) {
             case "next":
                 console.log("at next");
 
-                sendRequest(0);
+                sendRequest(1);
                 break;
-            defualt:
+            default:
             console.log("at default");
 
                 sendRequest(-1);
@@ -130,7 +134,7 @@ function Song(props) {
 
     return (
         <SongContainer>
-            <img src={props.song.track.album.images[2].url} />
+            <img alt="album-art" src={props.song.track.album.images[2].url} />
             <span className="artists">{props.song.track.artists.map(artist => artist.name).join(', ')}</span>
             <span className="title">{props.song.track.name}</span>
             <div className="actionsContainer">

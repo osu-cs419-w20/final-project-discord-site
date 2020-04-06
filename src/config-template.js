@@ -1,5 +1,6 @@
 export default {
 	"prefix": "`",
-    "appURL": "http://localhost:3000"
+    "appURL": "localhost:3000",
+    "apiURL": "localhost:8888"
 
 }

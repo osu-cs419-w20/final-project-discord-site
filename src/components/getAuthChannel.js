@@ -5,7 +5,6 @@ import { useDispatch } from 'react-redux';
 import { addDirectMessage } from '../redux/actions';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
-import config from '../config.js';
 import {baseUrl} from "../App";
 import { getToken } from '../redux/selectors';
 import { useSelector } from 'react-redux';
@@ -40,13 +39,14 @@ function GetAuthChannel(props) {
     const [ error, setError ] = useState(false);
     const client = new Discord.Client();
     const dispatch = useDispatch();
-    let channelID = 0;
-    let authorID = 0;
+    // let channelID = 0;
+    // let authorID = 0;
 
     // const [sticky] = useSticky();
 
     //login bot on load
     useEffect(() => {
+        // console.log(token)
         client.login(token);
         client.on('ready', () => {
             console.log("Auth Client ready!");
@@ -75,13 +75,18 @@ function GetAuthChannel(props) {
                         }
                     }
                     );
+                    if (response.status !== 200){
+                        console.log(response);
+                        setError(true);//gets undone immediatly, just getting rid of the warning
+                    }
+                    setError(false);
                     // const responseBody = await response.json();
                     // console.log("== Response:", responseBody);
                 // channelID = msg.channel.id;
                 // authorID = msg.author.id;
                 // msg.channel.send('t').then( () => {
+                    setDMToken("");
                     dispatch(addDirectMessage(msg.author.id, msg.channel));
-                    // setToken("");
 
                 // });
 

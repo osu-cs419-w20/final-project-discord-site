@@ -5,6 +5,7 @@
     "client_secret": "spotify_client_secret",
     "client_id": "spotify_client_id",
     "youtube_key": "google_api_key",
-    "appURL": "localhost:3000"
+    "appURL": "localhost:3000",
+    "apiURL": "localhost:8888"
 
 }

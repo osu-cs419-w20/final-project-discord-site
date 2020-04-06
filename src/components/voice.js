@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import fetch from 'isomorphic-unfetch';
-import ScrollToBottom /*, {useSticky}*/ from 'react-scroll-to-bottom';
 
 import {baseUrl} from '../App.js';
 import Spinner from './spinner.js';
 import ErrorContainer from './errorContainer.js';
 import WarningContainer from './warningContainer.js';
-import MessageInput from './messageInput.js';
-import MessageContainer from './messageContainer.js';
-import config from '../config.js';
 import { getToken } from '../redux/selectors';
 import { useSelector } from 'react-redux';
-import SpotifySongs from './spotifySongs.js';
 
 // import Discord from "discord.js/webpack";
 const Discord = require('discord.js/webpack/discord.min');
@@ -61,8 +56,10 @@ function Voice(props) {
     const [ ready, setReady ] = useState(false);
     const [ error, setError ] = useState(false);
     const [ client, setClient ] = useState(new Discord.Client());
-    // const [sticky] = useSticky();
-
+    // doing this to remove a warning
+    if(0){
+        setClient(new Discord.Client());
+    }
     //login bot on load
     useEffect(() => {
         client.login(token);
@@ -76,7 +73,7 @@ function Voice(props) {
             setReady(false)
             console.log("Voice Client destroyed");
         };
-    }, []);
+    }, [client, token]);
 
     //fetch starting channel messages using discord API
     useEffect(() => {
@@ -132,7 +129,7 @@ function Voice(props) {
             controller.abort();
             ignore = true;
         };
-    }, [props.channel]);
+    }, [props.channel, token]);
 
     //update the list when new messages are received from discord.js
     
@@ -147,7 +144,7 @@ function Voice(props) {
         return () => {
             client.removeListener('message', callback);
         };
-    }, [messages]);
+    }, [messages, client, props.channel.id]);
 
     return (
         <VoiceContainer>

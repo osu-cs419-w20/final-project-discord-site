@@ -2,6 +2,7 @@
   "name": "master-assignment-4",
   "version": "0.1.0",
   "private": true,
+  "homepage": "http://192.168.0.243/disc/",
   "dependencies": {
     "@discordjs/opus": "^0.1.0",
     "@emotion/core": "^10.0.28",
@@ -31,7 +32,8 @@
     "bot": "node src/bot/discordbot.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "npm run build && rsync -avz build/ /hdd/www/html/disc"
   },
   "eslintConfig": {
     "extends": "react-app"

@@ -59,7 +59,7 @@ const globalStyles = css`
 ReactDOM.render(
     <Provider store={store}>
         <Global styles={globalStyles} />
-        <BrowserRouter>
+        <BrowserRouter basename={'/disc'}>
             <App />
         </BrowserRouter>
     </Provider>, 
